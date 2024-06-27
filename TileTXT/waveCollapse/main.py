@@ -8,8 +8,8 @@ pygame.init()
 
 BLACK = (0,0,0)
 
-DIM = 2
-scale = 4
+DIM = 6
+scale = 1
 CELL_SIZE = 50 * scale
 
 BLANK = 0
@@ -59,9 +59,9 @@ rules = {
     ],
     LEFT:[
         [RIGHT,LEFT,DOWN], # UP TILE
-        [UP,DOWN,RIGHT],# RIGHT TILE
+        [BLANK,RIGHT],# RIGHT TILE
         [RIGHT,LEFT,UP], # DOWN TILE
-        [BLANK,RIGHT],# LEFT TILE
+        [UP,DOWN,RIGHT],# LEFT TILE
     ]
 }
 
@@ -199,9 +199,9 @@ def newLOOP(grid):
     pygame.display.flip()
     return grid
 
-#for i in range(DIM*DIM):
-    #grid=newLOOP(grid)
-    #print(grid)
+for i in range(DIM*DIM):
+    grid=newLOOP(grid)
+    print(grid)
 
 while True:
     for event in pygame.event.get():
