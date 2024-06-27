@@ -14,11 +14,12 @@ class Game:
         self.screenHeight = 12 * self.tileSize 
         self.realScreenWidth = self.maxScreenCol * self.tileSize
         self.realScreenHeight = self.maxScreenRow * self.tileSize
-        self.screen = pygame.display.set_mode((self.screenWidth, self.screenHeight))
+        self.screen = pygame.display.set_mode((self.screenWidth, self.screenHeight + 50))  # Extra space for toolbar
         pygame.display.set_caption("TileTXT")
 
         self.BLACK = (0, 0, 0)
         self.WHITE = (255, 255, 255)
+        self.GRAY = (200, 200, 200)
 
         self.imagesName,self.images = self.load_images()
         pygame.font.init()
@@ -36,6 +37,8 @@ class Game:
 
         self.camera_x, self.camera_y = 0, 0
         self.zoom = 1
+
+        self.isBrush = True  # True for brush, False for eraser
 
     def load_images(self):
         base_paths = ["res/objects","res/Tiles"]
@@ -101,21 +104,34 @@ class Game:
         xx = int((self.mX / self.zoom + self.camera_x) // self.tileSize)
         yy = int((self.mY / self.zoom + self.camera_y) // self.tileSize)
         if 0 <= xx < self.maxScreenCol and 0 <= yy < self.maxScreenRow:
-            if wd == 1:
-                if "Tiles" in self.imagesName[self.block][1]:
-                    self.map[xx][yy] = self.block
+            if self.isBrush:
+                if wd == 1:
+                    if "Tiles" in self.imagesName[self.block][1]:
+                        self.map[xx][yy] = self.block
+                    else:
+                        self.mapObject[xx][yy] = self.block
                 else:
-                    self.mapObject[xx][yy] = self.block
+                    for i in range(-wd + 1, wd):
+                        for j in range(-wd + 1, wd):
+                            xw = xx + i
+                            yw = yy + j
+                            if 0 <= xw < self.maxScreenCol and 0 <= yw < self.maxScreenRow:
+                                if "Tiles" in self.imagesName[self.block][1]:
+                                    self.map[xw][yw] = self.block
+                                else:
+                                    self.mapObject[xw][yw] = self.block
             else:
-                for i in range(-wd + 1, wd):
-                    for j in range(-wd + 1, wd):
-                        xw = xx + i
-                        yw = yy + j
-                        if 0 <= xw < self.maxScreenCol and 0 <= yw < self.maxScreenRow:
-                            if "Tiles" in self.imagesName[self.block][1]:
-                                self.map[xw][yw] = self.block
-                            else:
-                                self.mapObject[xw][yw] = self.block
+                if wd == 1:
+                    self.map[xx][yy] = -1
+                    self.mapObject[xx][yy] = -1
+                else:
+                    for i in range(-wd + 1, wd):
+                        for j in range(-wd + 1, wd):
+                            xw = xx + i
+                            yw = yy + j
+                            if 0 <= xw < self.maxScreenCol and 0 <= yw < self.maxScreenRow:
+                                self.map[xw][yw] = -1
+                                self.mapObject[xw][yw] = -1
 
     def save(self):
         stringTile = ""
@@ -138,6 +154,50 @@ class Game:
         with open("MAPAObject.txt", "w") as f:
             f.write(stringObject)
         print("CREATED")
+
+    def draw_toolbar(self):
+        toolbar_height = 50
+        pygame.draw.rect(self.screen, self.GRAY, (0, self.screenHeight, self.screenWidth, toolbar_height))
+        
+        brush_button_rect = pygame.Rect(10, self.screenHeight + 10, 100, 30)
+        pygame.draw.rect(self.screen, self.WHITE if self.isBrush else self.BLACK, brush_button_rect)
+        brush_text = self.font.render("Brush" if self.isBrush else "Eraser", True, self.BLACK if self.isBrush else self.WHITE)
+        self.screen.blit(brush_text, (20, self.screenHeight + 15))
+
+        # Block size buttons
+        size_decrease_rect = pygame.Rect(130, self.screenHeight + 10, 30, 30)
+        size_increase_rect = pygame.Rect(170, self.screenHeight + 10, 30, 30)
+        pygame.draw.rect(self.screen, self.WHITE, size_decrease_rect)
+        pygame.draw.rect(self.screen, self.WHITE, size_increase_rect)
+        self.screen.blit(self.font.render("-", True, self.BLACK), (140, self.screenHeight + 15))
+        self.screen.blit(self.font.render("+", True, self.BLACK), (180, self.screenHeight + 15))
+
+        # Block size display
+        block_size_text = self.font.render(f"Size: {self.brushLenght}", True, self.BLACK)
+        self.screen.blit(block_size_text, (210, self.screenHeight + 15))
+
+        
+        # Display the selected image
+        pygame.draw.rect(self.screen, self.block, (285, self.screenHeight, self.tileSize+10, toolbar_height))
+
+        selected_image = pygame.transform.scale(self.images[self.block], (self.tileSize, self.tileSize))
+        self.screen.blit(selected_image, (290, self.screenHeight+1))
+        xx = int((self.mX / self.zoom + self.camera_x) // self.tileSize)
+        yy = int((self.mY / self.zoom + self.camera_y) // self.tileSize)
+        texto_mouse = self.font.render(f"ZOOM:{self.zoom}   CAM({self.camera_x},{self.camera_y})  MOUSE({xx},{yy})", True, self.BLACK)
+        self.screen.blit(texto_mouse, (370, self.screenHeight+20))
+
+
+
+    def handle_toolbar_events(self,):
+        if 10 <= self.mX <= 110 and self.screenHeight + 10 <= self.mY <= self.screenHeight + 40:
+            self.isBrush = not self.isBrush
+        elif 130 <= self.mX <= 160 and self.screenHeight + 10 <= self.mY <= self.screenHeight + 40:
+            self.brushLenght = max(1, self.brushLenght - 1)
+            self.mouseClick = False
+        elif 170 <= self.mX <= 200 and self.screenHeight + 10 <= self.mY <= self.screenHeight + 40:
+            self.brushLenght = min(10, self.brushLenght + 1)
+            self.mouseClick = False
 
     def run(self):
         while True:
@@ -174,18 +234,16 @@ class Game:
                     elif event.key == pygame.K_MINUS or event.key == pygame.K_KP_MINUS:
                         self.zoom = max(self.zoom - 0.2, 0.2)
                         self.zoom = round(self.zoom, 2)
-                    elif event.key == pygame.K_p:
-                        xx = int((self.mX / self.zoom + self.camera_x) // self.tileSize)
-                        yy = int((self.mY / self.zoom + self.camera_y) // self.tileSize)
-                        print(xx, yy)
+                    
 
             self.mX, self.mY = pygame.mouse.get_pos()
-            texto_mouse = self.font.render(f"BLOCK: {self.imagesName[self.block][0]} ZOOM:{self.zoom} CAM({self.camera_x},{self.camera_y})", True, self.BLACK)
             if self.mouseClick:
-                self.paint(self.brushLenght)
+                if self.mY < self.screenHeight:
+                    self.paint(self.brushLenght)
+                self.handle_toolbar_events()
             self.screen.fill(self.WHITE)
             self.draw_cells()
-            self.screen.blit(texto_mouse, (self.mX, self.mY))
+            self.draw_toolbar()
             pygame.display.flip()
 
 if __name__ == "__main__":
