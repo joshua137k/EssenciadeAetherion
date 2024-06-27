@@ -1,70 +1,29 @@
 import pygame
 import sys
 import random
-
-
-pygame.init()
-
+from Tile import Tile
+from cell import Cell
 
 BLACK = (0,0,0)
 
-DIM = 6
-scale = 1
+
+
+pygame.init()
+DIM = 20
+scale = 0.8
 CELL_SIZE = 50 * scale
-
-BLANK = 0
-UP = 1
-RIGHT = 2
-DOWN = 3
-LEFT = 4
-
-
-
 width = DIM*CELL_SIZE 
 height = DIM*CELL_SIZE
 WINDOW_SIZE = (width,height)
-
 screen = pygame.display.set_mode(WINDOW_SIZE)
 pygame.display.set_caption("WaveCollapeTeste")
+
+
 
 grid = []
 
 tiles = []
-
-rules = {
-    BLANK:[
-        [BLANK,UP], # UP TILE
-        [BLANK,RIGHT], # RIGHT TILE
-        [BLANK,DOWN], # DOWN TILE
-        [BLANK, LEFT], # LEFT TILE
-    ],
-    UP:[
-        [RIGHT,LEFT,DOWN], # UP TILE
-        [LEFT,UP,DOWN], # RIGHT TILE
-        [BLANK,DOWN], # DOWN TILE
-        [RIGHT,UP,DOWN], # LEFT TILE
-
-    ],
-    RIGHT:[
-        [RIGHT,LEFT,DOWN], # UP TILE
-        [LEFT,UP,DOWN], # RIGHT TILE
-        [RIGHT,LEFT,UP], # DOWN TILE
-        [BLANK,LEFT], # LEFT TILE
-    ],
-    DOWN:[
-        [BLANK,UP], # UP TILE
-        [LEFT,UP,DOWN], # RIGHT TILE
-        [RIGHT,LEFT,UP], # DOWN TILE
-        [RIGHT,UP,DOWN], # LEFT TILE
-    ],
-    LEFT:[
-        [RIGHT,LEFT,DOWN], # UP TILE
-        [BLANK,RIGHT],# RIGHT TILE
-        [RIGHT,LEFT,UP], # DOWN TILE
-        [UP,DOWN,RIGHT],# LEFT TILE
-    ]
-}
-
+tilesImages=[]
 
 
 def checkValid(arr,valid):
@@ -73,135 +32,147 @@ def checkValid(arr,valid):
 
 def preload():
     
-    tiles.append(pygame.transform.scale(pygame.image.load("TileTXT/waveCollapse/Teste/blank.png"), (CELL_SIZE, CELL_SIZE)))
-    tiles.append(pygame.transform.scale(pygame.image.load("TileTXT/waveCollapse/Teste/up.png"), (CELL_SIZE, CELL_SIZE)))
-    tiles.append(pygame.transform.scale(pygame.image.load("TileTXT/waveCollapse/Teste/right.png"), (CELL_SIZE, CELL_SIZE)))
-    tiles.append(pygame.transform.scale(pygame.image.load("TileTXT/waveCollapse/Teste/down.png"), (CELL_SIZE, CELL_SIZE)))
-    tiles.append(pygame.transform.scale(pygame.image.load("TileTXT/waveCollapse/Teste/left.png"), (CELL_SIZE, CELL_SIZE)))
+    tilesImages.append(pygame.transform.scale(pygame.image.load("TileTXT/waveCollapse/Teste/blank.png"), (CELL_SIZE, CELL_SIZE)))
+    tilesImages.append(pygame.transform.scale(pygame.image.load("TileTXT/waveCollapse/Teste/up.png"), (CELL_SIZE, CELL_SIZE)))
+    #tilesImages.append(pygame.transform.scale(pygame.image.load("TileTXT/waveCollapse/Teste/right.png"), (CELL_SIZE, CELL_SIZE)))
+    #tilesImages.append(pygame.transform.scale(pygame.image.load("TileTXT/waveCollapse/Teste/down.png"), (CELL_SIZE, CELL_SIZE)))
+    #tilesImages.append(pygame.transform.scale(pygame.image.load("TileTXT/waveCollapse/Teste/left.png"), (CELL_SIZE, CELL_SIZE)))
+
 
 def draw_matrix(grid):
-    #print()
-    #print("firstGRID:"+str(grid))
-    gridCopy = grid.copy()
-    gridCopy = [i for i in gridCopy if i["collapsed"]==False]
-    gridCopy = sorted(gridCopy, key=lambda x: len(x["options"]) )
-    
-    lenG = len(gridCopy[0]["options"])
-    stopIndex = 0
-    for i in range(len(gridCopy)):
-        if (len(gridCopy[i]["options"])>lenG):
-            stopIndex=i
-            break
-    if stopIndex>0:
-        del gridCopy[stopIndex:len(gridCopy)-stopIndex]
-    
-    cell = random.choice(gridCopy)
-    if cell["options"]!=[]:
-        cell["collapsed"]=True
-        pick = random.choice(cell["options"])
-        cell["options"] = [pick]
-    
 
-    #print()
-   # print("sorted:"+str(gridCopy))
     for row in range(DIM):
         for col in range(DIM):
             cell = grid[col+row*DIM] 
-            if cell["collapsed"]:
-                tile_index = cell["options"][0]
+            if cell.collapsed:
+                tile_index = cell.options[0]
                 tile = tiles[tile_index]
-                screen.blit(tile, (col * CELL_SIZE, row * CELL_SIZE))
+                screen.blit(tile.img, (col * CELL_SIZE, row * CELL_SIZE))
             else:
                 rect = pygame.Rect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
                 pygame.draw.rect(screen, BLACK, rect)
 
-    nextGrid = [{"collapsed":False,"options":[BLANK,UP,RIGHT,DOWN,LEFT]} for i in range(DIM*DIM)]
-    for row in range(DIM):
-        for col in range(DIM):
 
-            index = col+row*DIM
-            print("index:"+str(index))
-            if grid[index]["collapsed"]:
+def update_matrix(grid):
+    
+    gridCopy = grid.copy()
+    gridCopy = [i for i in gridCopy if i.collapsed==False]
+    if len(gridCopy)==0:
+        return
+    gridCopy = sorted(gridCopy, key=lambda x: len(x.options) )
+    
+    lenG = len(gridCopy[0].options)
+    stopIndex = 0
+    for i in range(len(gridCopy)):
+        if (len(gridCopy[i].options)>lenG):
+            stopIndex=i
+            break
+    if stopIndex>0:
+        del gridCopy[stopIndex:]
+    
+    cell = random.choice(gridCopy)
+    if cell.options!=[]:
+            
+
+        cell.collapsed=True
+        pick = random.choice(cell.options)
+        cell.options = [pick]
+
+
+    
+
+    nextGrid = [None for i in range(DIM*DIM)]
+    for j in range(DIM):
+        for i in range(DIM):
+
+            index = i+j*DIM
+            #print("index:"+str(index))
+            if grid[index].collapsed:
                 nextGrid[index] = grid[index] 
             else:
-                opitions=[BLANK,UP,RIGHT,DOWN,LEFT]
-                
-                # 0 is blank
-                # 1 is 
-                
-                #Look up
-                if (row>0):
-                    up = grid[col + (row -1) * DIM]
-                    print("value OF UP:"+str(up))
-                    validOptions=[]
-                    for opition in up["options"]:
-                        valid = rules[opition][2]
-                        validOptions =list(set(validOptions+valid))
-                    print("Look up:"+str(validOptions))
-                    opitions =checkValid(opitions,validOptions)
-                #Look right
-                if (col< DIM -1 ):
-                    right = grid[(col+1) + row * DIM]
-                    print("value OF RIGHT:"+str(right))
-                    validOptions=[]
-                    for opition in right["options"]:
-                        valid = rules[opition][3]
-                        validOptions =list(set(validOptions+valid))
-                    print("Look right:"+str(validOptions))
-                    opitions = checkValid(opitions,validOptions)
-                #Look down 
-                if (row<DIM - 1):
-                    down = grid[col + (row + 1) * DIM]
-                    print("value OF DOWN:"+str(down))
-                    validOptions=[]
-                    for opition in down["options"]:
-                        valid = rules[opition][0]
-                        validOptions =list(set(validOptions+valid)) 
-                    print("Look down:"+str(validOptions))
-                    opitions = checkValid(opitions,validOptions)
-                #Look left
-                if (col>0):
-                    left = grid[(col-1) + row * DIM]
-                    print("value OF LEFT:"+str(left))
-                    validOptions=[]
-                    for opition in left["options"]:
-                        valid = rules[opition][1]
-                        validOptions =list(set(validOptions+valid))
-                    print("Look left:"+str(validOptions))
-                    opitions = checkValid(opitions,validOptions)
+                opitions=[i for i in range(len(tiles))]
 
                 
-                nextGrid[index]["options"] = opitions
-                nextGrid[index]["collapsed"]=False
-    
-    #print()
-    #print("CHange GRID:"+str(nextGrid))
+                #Look up
+                if (j>0):
+                    up = grid[i + (j -1) * DIM]
+                    validOptions=[]
+                    for opition in up.options:
+                        valid = tiles[opition].down
+                        validOptions = list( set(validOptions + valid) )
+                    #print("Look up:"+str(validOptions))
+                    opitions = checkValid(opitions,validOptions)
+                #Look right
+                if (i< DIM -1 ):
+                    right = grid[(i+1) + j * DIM]
+                    validOptions=[]
+                    for opition in right.options:
+                        valid = tiles[opition].left
+                        validOptions =list(set(validOptions+valid))
+                    #print("Look right:"+str(validOptions))
+                    opitions = checkValid(opitions,validOptions)
+                #Look down 
+                if (j<DIM - 1):
+                    down = grid[i + (j + 1) * DIM]
+                    validOptions=[]
+                    for opition in down.options:
+                        valid = tiles[opition].up
+                        validOptions =list(set(validOptions+valid)) 
+                    #print("Look down:"+str(validOptions))
+                    opitions = checkValid(opitions,validOptions)
+                #Look left
+                if (i>0):
+                    left = grid[(i-1) + j * DIM]
+                    validOptions=[]
+                    for opition in left.options:
+                        valid = tiles[opition].right
+                        validOptions =list(set(validOptions+valid))
+                    #print("Look left:"+str(validOptions))
+                    opitions = checkValid(opitions,validOptions)
+
+                nextGrid[index] = Cell(len(tiles),opitions)
+
     return nextGrid
     
 
-                
-preload()
-
-for i in range(DIM*DIM):
-    grid.append({"collapsed":False,
-             "options":[BLANK,UP,RIGHT,DOWN,LEFT]
-             })
-
-
-
-print()
-
 def newLOOP(grid):
     screen.fill((255, 255, 255)) 
-
-    grid = draw_matrix(grid)
-    
+    grid = update_matrix(grid)
+    #print(grid[0].options)
+    draw_matrix(grid)
     pygame.display.flip()
     return grid
 
+
+#--------------------------------
+#LOAD IMAGES       
+preload()
+
+
+#[UP,RIGHT,DOWN,LEFT]
+tiles.append(Tile(tilesImages[0],[0,0,0,0]))
+tiles.append(Tile(tilesImages[1],[1,1,0,1]))
+#ROTATE
+tiles.append(tiles[1].rotate(1))
+tiles.append(tiles[1].rotate(2))
+tiles.append(tiles[1].rotate(3))
+
+#SETTING GRID
+for i in range(DIM*DIM):
+    grid.append(Cell(len(tiles)))
+
+# GENERATE THE ADJACENCY RULES BASED ON EDGES
+for i in range(len(tiles)):
+    tile = tiles[i]
+    tile.analyze(tiles)
+
+
+
+#TESTE
 for i in range(DIM*DIM):
     grid=newLOOP(grid)
-    print(grid)
+
+
 
 while True:
     for event in pygame.event.get():
@@ -210,5 +181,4 @@ while True:
             sys.exit()
         if event.type == pygame.MOUSEBUTTONDOWN:
             grid=newLOOP(grid)
-            print(grid)
 
